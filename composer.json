@@ -1,7 +1,7 @@
 {
     "name": "webignition/guzzle-http-authentication-middleware",
     "description": "Http authentication middleware for Guzzle6",
-    "keywords": ["sitemap"],
+    "keywords": ["Guzzle", "Middleware", "HTTP Authentication", "PSR7"],
     "homepage": "https://github.com/webignition/guzzle-http-authentication-middleware",
     "type": "library",
     "license": "MIT",
