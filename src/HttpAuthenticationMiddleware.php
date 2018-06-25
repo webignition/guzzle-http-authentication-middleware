@@ -11,9 +11,22 @@ class HttpAuthenticationMiddleware
      */
     private $httpAuthenticationCredentials;
 
+    /**
+     * @var bool
+     */
+    private $isSingleUse = false;
+
     public function __construct()
     {
         $this->httpAuthenticationCredentials = new HttpAuthenticationCredentials();
+    }
+
+    /**
+     * @param $isSingleUse
+     */
+    public function setIsSingleUse($isSingleUse)
+    {
+        $this->isSingleUse = $isSingleUse;
     }
 
     /**
@@ -33,6 +46,11 @@ class HttpAuthenticationMiddleware
     {
         return function (RequestInterface $request, array $options) use (&$handler) {
             $httpAuthenticationHeader = new HttpAuthenticationHeader($this->httpAuthenticationCredentials);
+
+            if ($this->isSingleUse) {
+                $this->httpAuthenticationCredentials = new HttpAuthenticationCredentials();
+                $this->isSingleUse = false;
+            }
 
             if (!$httpAuthenticationHeader->isValidForRequest($request)) {
                 return $handler($request, $options);
