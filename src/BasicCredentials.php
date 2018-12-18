@@ -15,16 +15,6 @@ class BasicCredentials implements CredentialsInterface
         $this->host = strtolower($host);
     }
 
-    public function getUsername(): string
-    {
-        return $this->username;
-    }
-
-    public function getPassword(): string
-    {
-        return $this->password;
-    }
-
     public function getHost(): string
     {
         return $this->host;
