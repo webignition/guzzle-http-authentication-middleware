@@ -125,6 +125,43 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    public function testClearTypeClearCredentials()
+    {
+        $credentials = new BasicCredentials('username', 'password', 'example.com');
+        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
+        $this->httpAuthenticationMiddleware->setCredentials($credentials);
+
+        $modifiedRequest = \Mockery::mock(RequestInterface::class);
+        $originalRequest = $this->createOriginalRequest();
+        $originalRequest
+            ->shouldReceive('withHeader')
+            ->with(AuthorizationHeader::NAME, 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=')
+            ->andReturn($modifiedRequest);
+
+        $options = [];
+
+        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
+            function ($returnedRequest, $returnedOptions) use ($modifiedRequest, $options) {
+                $this->assertEquals($modifiedRequest, $returnedRequest);
+                $this->assertEquals($options, $returnedOptions);
+            }
+        );
+
+        $returnedFunction($originalRequest, $options);
+
+        $this->httpAuthenticationMiddleware->clearType();
+        $this->httpAuthenticationMiddleware->clearCredentials();
+
+        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
+            function ($returnedRequest, $returnedOptions) use ($originalRequest, $options) {
+                $this->assertEquals($originalRequest, $returnedRequest);
+                $this->assertEquals($options, $returnedOptions);
+            }
+        );
+
+        $returnedFunction($originalRequest, $options);
+    }
+
     /**
      * @return MockInterface|RequestInterface
      */
