@@ -8,7 +8,7 @@ use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationCredentia
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationHeader;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
-class HttpAuthenticationMiddlewareTest extends \PHPUnit_Framework_TestCase
+class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var HttpAuthenticationMiddleware
