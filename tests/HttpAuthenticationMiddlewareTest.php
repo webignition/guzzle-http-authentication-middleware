@@ -26,10 +26,46 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $this->httpAuthenticationMiddleware = new HttpAuthenticationMiddleware();
     }
 
-    public function testInvokeEmptyCredentials()
+    public function testInvokeTypeNotSet()
     {
         $request = \Mockery::mock(RequestInterface::class);
         $options = [];
+
+        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
+            function ($returnedRequest, $returnedOptions) use ($request, $options) {
+                $this->assertEquals($request, $returnedRequest);
+                $this->assertEquals($options, $returnedOptions);
+            }
+        );
+
+        $returnedFunction($request, $options);
+    }
+
+    public function testInvokeCredentialsNotSet()
+    {
+        $request = \Mockery::mock(RequestInterface::class);
+        $options = [];
+
+        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
+
+        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
+            function ($returnedRequest, $returnedOptions) use ($request, $options) {
+                $this->assertEquals($request, $returnedRequest);
+                $this->assertEquals($options, $returnedOptions);
+            }
+        );
+
+        $returnedFunction($request, $options);
+    }
+
+    public function testInvokeEmptyCredentials()
+    {
+        $request = $this->createOriginalRequest();
+        $options = [];
+
+        $credentials = new BasicCredentials();
+        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
+        $this->httpAuthenticationMiddleware->setCredentials($credentials);
 
         $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
             function ($returnedRequest, $returnedOptions) use ($request, $options) {
@@ -47,6 +83,7 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $options = [];
 
         $credentials = new BasicCredentials('username', 'password', 'example.org');
+        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
         $this->httpAuthenticationMiddleware->setCredentials($credentials);
 
         $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
