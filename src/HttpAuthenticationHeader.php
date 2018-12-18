@@ -8,25 +8,14 @@ class HttpAuthenticationHeader
 {
     const NAME = 'Authorization';
 
-    /**
-     * @var HttpAuthenticationCredentials
-     */
     private $httpAuthenticationCredentials;
 
-    /**
-     * @param HttpAuthenticationCredentials $httpAuthenticationCredentials
-     */
     public function __construct(HttpAuthenticationCredentials $httpAuthenticationCredentials)
     {
         $this->httpAuthenticationCredentials = $httpAuthenticationCredentials;
     }
 
-    /**
-     * @param RequestInterface $request
-     *
-     * @return bool
-     */
-    public function isValidForRequest(RequestInterface $request)
+    public function isValidForRequest(RequestInterface $request): bool
     {
         if ($this->httpAuthenticationCredentials->isEmpty()) {
             return false;
@@ -42,18 +31,12 @@ class HttpAuthenticationHeader
         return preg_match('/' . preg_quote($domain, '//') . '$/', $requestHost) > 0;
     }
 
-    /**
-     * @return string
-     */
-    public function getName()
+    public function getName(): string
     {
         return self::NAME;
     }
 
-    /**
-     * @return string
-     */
-    public function getValue()
+    public function getValue(): string
     {
         $usernamePasswordPart = base64_encode(sprintf(
             '%s:%s',

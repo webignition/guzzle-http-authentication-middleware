@@ -24,41 +24,29 @@ class HttpAuthenticationCredentials
      * @param string $password
      * @param string $domain
      */
-    public function __construct($username = '', $password = '', $domain = '')
+    public function __construct(string $username = '', string $password = '', string $domain = '')
     {
         $this->username = $username;
         $this->password = $password;
         $this->domain = strtolower($domain);
     }
 
-    /**
-     * @return string
-     */
-    public function getUsername()
+    public function getUsername(): string
     {
         return $this->username;
     }
 
-    /**
-     * @return string
-     */
-    public function getPassword()
+    public function getPassword(): string
     {
         return $this->password;
     }
 
-    /**
-     * @return string
-     */
-    public function getDomain()
+    public function getDomain(): string
     {
         return $this->domain;
     }
 
-    /**
-     * @return bool
-     */
-    public function isEmpty()
+    public function isEmpty(): bool
     {
         return empty($this->username);
     }

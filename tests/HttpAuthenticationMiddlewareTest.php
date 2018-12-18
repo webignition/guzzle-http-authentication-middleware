@@ -133,7 +133,7 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
     /**
      * @return MockInterface|RequestInterface
      */
-    private function createOriginalRequest()
+    private function createOriginalRequest(): RequestInterface
     {
         $request = \Mockery::mock(RequestInterface::class);
         $request
