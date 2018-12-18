@@ -4,8 +4,9 @@ namespace webignition\Guzzle\Middleware\HttpAuthentication\Tests;
 
 use Mockery\MockInterface;
 use Psr\Http\Message\RequestInterface;
-use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationCredentials;
-use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationHeader;
+use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationType;
+use webignition\Guzzle\Middleware\HttpAuthentication\BasicCredentials;
+use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationHeader;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
 class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
@@ -45,8 +46,8 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $request = $this->createOriginalRequest();
         $options = [];
 
-        $credentials = new HttpAuthenticationCredentials('username', 'password', 'example.org');
-        $this->httpAuthenticationMiddleware->setHttpAuthenticationCredentials($credentials);
+        $credentials = new BasicCredentials('username', 'password', 'example.org');
+        $this->httpAuthenticationMiddleware->setCredentials($credentials);
 
         $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
             function ($returnedRequest, $returnedOptions) use ($request, $options) {
@@ -60,8 +61,9 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
 
     public function testInvokeValidCredentialsAppliedToAllRequests()
     {
-        $credentials = new HttpAuthenticationCredentials('username', 'password', 'example.com');
-        $this->httpAuthenticationMiddleware->setHttpAuthenticationCredentials($credentials);
+        $credentials = new BasicCredentials('username', 'password', 'example.com');
+        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
+        $this->httpAuthenticationMiddleware->setCredentials($credentials);
 
         $requestCount = 3;
 
@@ -69,7 +71,7 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $originalRequest = $this->createOriginalRequest();
         $originalRequest
             ->shouldReceive('withHeader')
-            ->with(HttpAuthenticationHeader::NAME, 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=')
+            ->with(AuthorizationHeader::NAME, 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=')
             ->andReturn($modifiedRequest);
 
         for ($requestIndex = 0; $requestIndex < $requestCount; $requestIndex++) {
@@ -78,50 +80,6 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
             $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
                 function ($returnedRequest, $returnedOptions) use ($modifiedRequest, $options) {
                     $this->assertEquals($modifiedRequest, $returnedRequest);
-                    $this->assertEquals($options, $returnedOptions);
-                }
-            );
-
-            $returnedFunction($originalRequest, $options);
-        }
-    }
-
-    public function testInvokeValidCredentialsAppliedToFirstRequestOnly()
-    {
-        $credentials = new HttpAuthenticationCredentials('username', 'password', 'example.com');
-        $this->httpAuthenticationMiddleware->setHttpAuthenticationCredentials($credentials);
-        $this->httpAuthenticationMiddleware->setIsSingleUse(true);
-
-        $requestCount = 3;
-        $modifiedRequest = \Mockery::mock(RequestInterface::class);
-        $originalRequest = $this->createOriginalRequest();
-
-        for ($requestIndex = 0; $requestIndex < $requestCount; $requestIndex++) {
-            if ($requestIndex === 0) {
-                $originalRequest
-                    ->shouldReceive('withHeader')
-                    ->with(HttpAuthenticationHeader::NAME, 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=')
-                    ->andReturn($modifiedRequest);
-            }
-
-            $options = [];
-
-            $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
-                function (
-                    $returnedRequest,
-                    $returnedOptions
-                ) use (
-                    $originalRequest,
-                    $modifiedRequest,
-                    $options,
-                    $requestIndex
-                ) {
-                    if ($requestIndex === 0) {
-                        $this->assertEquals($modifiedRequest, $returnedRequest);
-                    } else {
-                        $this->assertEquals($originalRequest, $returnedRequest);
-                    }
-
                     $this->assertEquals($options, $returnedOptions);
                 }
             );

@@ -2,7 +2,7 @@
 
 namespace webignition\Guzzle\Middleware\HttpAuthentication;
 
-class HttpAuthenticationType
+class AuthorizationType
 {
     const BASIC = 'Basic';
     const BEARER = 'Bearer';

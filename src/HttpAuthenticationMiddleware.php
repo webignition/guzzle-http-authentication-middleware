@@ -7,41 +7,55 @@ use Psr\Http\Message\RequestInterface;
 class HttpAuthenticationMiddleware
 {
     /**
-     * @var HttpAuthenticationCredentials
+     * @var string
      */
-    private $httpAuthenticationCredentials;
+    private $type;
 
     /**
-     * @var bool
+     * @var CredentialsInterface
      */
-    private $isSingleUse = false;
+    private $credentials = null;
 
-    public function __construct()
+    public function setType(string $type)
     {
-        $this->httpAuthenticationCredentials = new HttpAuthenticationCredentials();
+        $this->type = $type;
     }
 
-    public function setIsSingleUse(bool $isSingleUse)
+    public function setCredentials(CredentialsInterface $credentials)
     {
-        $this->isSingleUse = $isSingleUse;
+        $this->credentials = $credentials;
     }
 
-    public function setHttpAuthenticationCredentials(HttpAuthenticationCredentials $httpAuthenticationCredentials)
+    public function clearType()
     {
-        $this->httpAuthenticationCredentials = $httpAuthenticationCredentials;
+        $this->type = null;
+    }
+
+    public function clearCredentials()
+    {
+        $this->credentials = null;
     }
 
     public function __invoke(callable $handler): callable
     {
         return function (RequestInterface $request, array $options) use (&$handler) {
-            $httpAuthenticationHeader = new HttpAuthenticationHeader($this->httpAuthenticationCredentials);
-
-            if ($this->isSingleUse) {
-                $this->httpAuthenticationCredentials = new HttpAuthenticationCredentials();
-                $this->isSingleUse = false;
+            if (null === $this->type || null === $this->credentials) {
+                return $handler($request, $options);
             }
 
-            if (!$httpAuthenticationHeader->isValidForRequest($request)) {
+            $httpAuthenticationHeader = new AuthorizationHeader($this->type, $this->credentials);
+
+            if ($this->credentials->isEmpty()) {
+                return $handler($request, $options);
+            }
+
+            $host = $request->getHeaderLine('host');
+            $credentialsHost = $this->credentials->getHost();
+
+            $hasHostMatch = $host === $credentialsHost
+                && preg_match('/' . preg_quote($credentialsHost, '//') . '$/', $host) > 0;
+
+            if (!$hasHostMatch) {
                 return $handler($request, $options);
             }
 
