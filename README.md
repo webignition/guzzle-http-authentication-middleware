@@ -19,7 +19,9 @@ Maybe, just maybe, this is for you.
 ```php
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
-use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationCredentials;
+use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationType;
+use webignition\Guzzle\Middleware\HttpAuthentication\BasicCredentials;
+use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationHeader;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
 // Creating a client that uses the middleware
@@ -33,8 +35,9 @@ $client = new Client([
 ]);
 
 // Setting credentials on the middleware
-$credentials = new HttpAuthenticationCredentials('username', 'password', 'example.com');
-$httpAuthenticationMiddleware->setHttpAuthenticationCredentials($credentials);
+$credentials = new BasicCredentials('username', 'password', 'example.com');
+$httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
+$httpAuthenticationMiddleware->setCredentials($credentials);
 
 // All requests to example.com (or *.example.com) will now have
 // a correct Authorization header set for basic HTTP authentication
