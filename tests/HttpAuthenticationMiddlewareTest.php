@@ -8,7 +8,7 @@ use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationCredentia
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationHeader;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
-class HttpAuthenticationMiddlewareTest extends \PHPUnit_Framework_TestCase
+class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var HttpAuthenticationMiddleware
@@ -133,7 +133,7 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit_Framework_TestCase
     /**
      * @return MockInterface|RequestInterface
      */
-    private function createOriginalRequest()
+    private function createOriginalRequest(): RequestInterface
     {
         $request = \Mockery::mock(RequestInterface::class);
         $request

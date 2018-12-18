@@ -21,28 +21,17 @@ class HttpAuthenticationMiddleware
         $this->httpAuthenticationCredentials = new HttpAuthenticationCredentials();
     }
 
-    /**
-     * @param $isSingleUse
-     */
-    public function setIsSingleUse($isSingleUse)
+    public function setIsSingleUse(bool $isSingleUse)
     {
         $this->isSingleUse = $isSingleUse;
     }
 
-    /**
-     * @param HttpAuthenticationCredentials $httpAuthenticationCredentials
-     */
     public function setHttpAuthenticationCredentials(HttpAuthenticationCredentials $httpAuthenticationCredentials)
     {
         $this->httpAuthenticationCredentials = $httpAuthenticationCredentials;
     }
 
-    /**
-     * @param callable $handler
-     *
-     * @return callable
-     */
-    public function __invoke(callable $handler)
+    public function __invoke(callable $handler): callable
     {
         return function (RequestInterface $request, array $options) use (&$handler) {
             $httpAuthenticationHeader = new HttpAuthenticationHeader($this->httpAuthenticationCredentials);
