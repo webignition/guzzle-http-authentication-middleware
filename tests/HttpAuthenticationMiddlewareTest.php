@@ -5,12 +5,14 @@ namespace webignition\Guzzle\Middleware\HttpAuthentication\Tests;
 use Mockery\MockInterface;
 use Psr\Http\Message\RequestInterface;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationType;
-use webignition\Guzzle\Middleware\HttpAuthentication\BasicCredentials;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationHeader;
+use webignition\Guzzle\Middleware\HttpAuthentication\CredentialsFactory;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
 class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
 {
+    const HOST = 'example.com';
+
     /**
      * @var HttpAuthenticationMiddleware
      */
@@ -26,10 +28,39 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $this->httpAuthenticationMiddleware = new HttpAuthenticationMiddleware();
     }
 
-    public function testInvokeTypeNotSet()
-    {
+    /**
+     * @dataProvider invokeAuthorizationNotSetDataProvider
+     *
+     * @param string $requestHost
+     * @param string|null $type
+     * @param string|null $credentials
+     * @param string|null $host
+     */
+    public function testInvokeAuthorizationNotSet(
+        string $requestHost,
+        ?string $type,
+        ?string $credentials,
+        ?string $host
+    ) {
         $request = \Mockery::mock(RequestInterface::class);
+        $request
+            ->shouldReceive('getHeaderLine')
+            ->with('host')
+            ->andReturn($requestHost);
+
         $options = [];
+
+        if (null !== $type) {
+            $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
+        }
+
+        if (null !== $credentials) {
+            $this->httpAuthenticationMiddleware->setCredentials($credentials);
+        }
+
+        if (null !== $host) {
+            $this->httpAuthenticationMiddleware->setHost($host);
+        }
 
         $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
             function ($returnedRequest, $returnedOptions) use ($request, $options) {
@@ -41,66 +72,49 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $returnedFunction($request, $options);
     }
 
-    public function testInvokeCredentialsNotSet()
+    public function invokeAuthorizationNotSetDataProvider(): array
     {
-        $request = \Mockery::mock(RequestInterface::class);
-        $options = [];
-
-        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
-
-        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
-            function ($returnedRequest, $returnedOptions) use ($request, $options) {
-                $this->assertEquals($request, $returnedRequest);
-                $this->assertEquals($options, $returnedOptions);
-            }
-        );
-
-        $returnedFunction($request, $options);
-    }
-
-    public function testInvokeEmptyCredentials()
-    {
-        $request = $this->createOriginalRequest();
-        $options = [];
-
-        $credentials = new BasicCredentials();
-        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
-        $this->httpAuthenticationMiddleware->setCredentials($credentials);
-
-        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
-            function ($returnedRequest, $returnedOptions) use ($request, $options) {
-                $this->assertEquals($request, $returnedRequest);
-                $this->assertEquals($options, $returnedOptions);
-            }
-        );
-
-        $returnedFunction($request, $options);
-    }
-
-    public function testInvokeCredentialsInvalidForRequest()
-    {
-        $request = $this->createOriginalRequest();
-        $options = [];
-
-        $credentials = new BasicCredentials('username', 'password', 'example.org');
-        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
-        $this->httpAuthenticationMiddleware->setCredentials($credentials);
-
-        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
-            function ($returnedRequest, $returnedOptions) use ($request, $options) {
-                $this->assertEquals($request, $returnedRequest);
-                $this->assertEquals($options, $returnedOptions);
-            }
-        );
-
-        $returnedFunction($request, $options);
+        return [
+            'no properties set' => [
+                'requestHost' => self::HOST,
+                'type' => null,
+                'credentials' => null,
+                'host' => null,
+            ],
+            'type set, no credentials, no host' => [
+                'requestHost' => self::HOST,
+                'type' => AuthorizationType::BASIC,
+                'credentials' => null,
+                'host' => null,
+            ],
+            'type set, credentials set, no host' => [
+                'requestHost' => self::HOST,
+                'type' => AuthorizationType::BASIC,
+                'credentials' => 'non-blank string',
+                'host' => null,
+            ],
+            'empty credentials' => [
+                'requestHost' => self::HOST,
+                'type' => AuthorizationType::BASIC,
+                'credentials' => '',
+                'host' => self::HOST,
+            ],
+            'host mismatch' => [
+                'requestHost' => self::HOST,
+                'type' => AuthorizationType::BASIC,
+                'credentials' => 'non-blank string',
+                'host' => 'foo' . self::HOST,
+            ],
+        ];
     }
 
     public function testInvokeValidCredentialsAppliedToAllRequests()
     {
-        $credentials = new BasicCredentials('username', 'password', 'example.com');
+        $credentials = CredentialsFactory::createBasicCredentials('username', 'password');
+
         $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
         $this->httpAuthenticationMiddleware->setCredentials($credentials);
+        $this->httpAuthenticationMiddleware->setHost(self::HOST);
 
         $requestCount = 3;
 
@@ -108,7 +122,7 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $originalRequest = $this->createOriginalRequest();
         $originalRequest
             ->shouldReceive('withHeader')
-            ->with(AuthorizationHeader::NAME, 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=')
+            ->with(AuthorizationHeader::NAME, 'Basic ' . $credentials)
             ->andReturn($modifiedRequest);
 
         for ($requestIndex = 0; $requestIndex < $requestCount; $requestIndex++) {
@@ -127,15 +141,17 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
 
     public function testClearTypeClearCredentials()
     {
-        $credentials = new BasicCredentials('username', 'password', 'example.com');
+        $credentials = CredentialsFactory::createBasicCredentials('username', 'password');
+
         $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
         $this->httpAuthenticationMiddleware->setCredentials($credentials);
+        $this->httpAuthenticationMiddleware->setHost(self::HOST);
 
         $modifiedRequest = \Mockery::mock(RequestInterface::class);
         $originalRequest = $this->createOriginalRequest();
         $originalRequest
             ->shouldReceive('withHeader')
-            ->with(AuthorizationHeader::NAME, 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=')
+            ->with(AuthorizationHeader::NAME, 'Basic ' . $credentials)
             ->andReturn($modifiedRequest);
 
         $options = [];
@@ -171,7 +187,7 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         $request
             ->shouldReceive('getHeaderLine')
             ->with('host')
-            ->andReturn('example.com');
+            ->andReturn(self::HOST);
 
         return $request;
     }
