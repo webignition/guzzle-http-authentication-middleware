@@ -12,18 +12,28 @@ class HttpAuthenticationMiddleware
     private $type;
 
     /**
-     * @var CredentialsInterface
+     * @var string
      */
     private $credentials = null;
+
+    /**
+     * @var null string
+     */
+    private $host = null;
 
     public function setType(string $type)
     {
         $this->type = $type;
     }
 
-    public function setCredentials(CredentialsInterface $credentials)
+    public function setCredentials(string $credentials)
     {
         $this->credentials = $credentials;
+    }
+
+    public function setHost(string $host)
+    {
+        $this->host = $host;
     }
 
     public function clearType()
@@ -39,21 +49,20 @@ class HttpAuthenticationMiddleware
     public function __invoke(callable $handler): callable
     {
         return function (RequestInterface $request, array $options) use (&$handler) {
-            if (null === $this->type || null === $this->credentials) {
+            if (null === $this->type || null === $this->credentials || null === $this->host) {
                 return $handler($request, $options);
             }
 
             $httpAuthenticationHeader = new AuthorizationHeader($this->type, $this->credentials);
 
-            if ($this->credentials->isEmpty()) {
+            if (empty($this->credentials)) {
                 return $handler($request, $options);
             }
 
-            $host = $request->getHeaderLine('host');
-            $credentialsHost = $this->credentials->getHost();
+            $requestHost = $request->getHeaderLine('host');
 
-            $hasHostMatch = $host === $credentialsHost
-                && preg_match('/' . preg_quote($credentialsHost, '//') . '$/', $host) > 0;
+            $hasHostMatch = $requestHost === $this->host
+                && preg_match('/' . preg_quote($this->host, '//') . '$/', $requestHost) > 0;
 
             if (!$hasHostMatch) {
                 return $handler($request, $options);

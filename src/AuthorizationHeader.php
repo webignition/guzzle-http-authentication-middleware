@@ -9,7 +9,7 @@ class AuthorizationHeader
     private $type;
     private $credentials;
 
-    public function __construct(string $type, CredentialsInterface $credentials)
+    public function __construct(string $type, string $credentials)
     {
         $this->type = $type;
         $this->credentials = $credentials;
@@ -25,7 +25,7 @@ class AuthorizationHeader
         return sprintf(
             '%s %s',
             $this->type,
-            $this->credentials->getValue()
+            $this->credentials
         );
     }
 }

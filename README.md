@@ -20,8 +20,8 @@ Maybe, just maybe, this is for you.
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationType;
-use webignition\Guzzle\Middleware\HttpAuthentication\BasicCredentials;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationHeader;
+use webignition\Guzzle\Middleware\HttpAuthentication\CredentialsFactory;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
 // Creating a client that uses the middleware
@@ -35,9 +35,10 @@ $client = new Client([
 ]);
 
 // Setting credentials on the middleware
-$credentials = new BasicCredentials('username', 'password', 'example.com');
+$basicCredentials = CredentialsFactory::createBasicCredentials('username', 'password');
 $httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
 $httpAuthenticationMiddleware->setCredentials($credentials);
+$httpAuthenticationMiddleware->setHost('example.com');
 
 // All requests to example.com (or *.example.com) will now have
 // a correct Authorization header set for basic HTTP authentication
