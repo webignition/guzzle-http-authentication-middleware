@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpDocSignatureInspection */
 
 namespace webignition\Guzzle\Middleware\HttpAuthentication\Tests;
 
@@ -7,6 +8,7 @@ use Psr\Http\Message\RequestInterface;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationType;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationHeader;
 use webignition\Guzzle\Middleware\HttpAuthentication\CredentialsFactory;
+use webignition\Guzzle\Middleware\HttpAuthentication\HostComparer;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
 class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
@@ -25,16 +27,11 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->httpAuthenticationMiddleware = new HttpAuthenticationMiddleware();
+        $this->httpAuthenticationMiddleware = new HttpAuthenticationMiddleware(new HostComparer());
     }
 
     /**
      * @dataProvider invokeAuthorizationNotSetDataProvider
-     *
-     * @param string $requestHost
-     * @param string|null $type
-     * @param string|null $credentials
-     * @param string|null $host
      */
     public function testInvokeAuthorizationNotSet(
         string $requestHost,
@@ -181,13 +178,13 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
     /**
      * @return MockInterface|RequestInterface
      */
-    private function createOriginalRequest(): RequestInterface
+    private function createOriginalRequest(string $host = self::HOST): RequestInterface
     {
         $request = \Mockery::mock(RequestInterface::class);
         $request
             ->shouldReceive('getHeaderLine')
             ->with('host')
-            ->andReturn(self::HOST);
+            ->andReturn($host);
 
         return $request;
     }

@@ -7,6 +7,11 @@ use Psr\Http\Message\RequestInterface;
 class HttpAuthenticationMiddleware
 {
     /**
+     * @var HostComparer
+     */
+    private $hostComparer;
+
+    /**
      * @var string
      */
     private $type;
@@ -14,12 +19,17 @@ class HttpAuthenticationMiddleware
     /**
      * @var string
      */
-    private $credentials = null;
+    private $credentials = '';
 
     /**
      * @var null string
      */
     private $host = null;
+
+    public function __construct(HostComparer $hostComparer)
+    {
+        $this->hostComparer = $hostComparer;
+    }
 
     public function setType(string $type)
     {
@@ -59,12 +69,7 @@ class HttpAuthenticationMiddleware
                 return $handler($request, $options);
             }
 
-            $requestHost = $request->getHeaderLine('host');
-
-            $hasHostMatch = $requestHost === $this->host
-                && preg_match('/' . preg_quote($this->host, '//') . '$/', $requestHost) > 0;
-
-            if (!$hasHostMatch) {
+            if (!$this->hostComparer->isHostMatch($request->getHeaderLine('host'), $this->host)) {
                 return $handler($request, $options);
             }
 
