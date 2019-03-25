@@ -8,6 +8,7 @@ use Psr\Http\Message\RequestInterface;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationType;
 use webignition\Guzzle\Middleware\HttpAuthentication\AuthorizationHeader;
 use webignition\Guzzle\Middleware\HttpAuthentication\CredentialsFactory;
+use webignition\Guzzle\Middleware\HttpAuthentication\HostComparer;
 use webignition\Guzzle\Middleware\HttpAuthentication\HttpAuthenticationMiddleware;
 
 class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
@@ -26,7 +27,7 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->httpAuthenticationMiddleware = new HttpAuthenticationMiddleware();
+        $this->httpAuthenticationMiddleware = new HttpAuthenticationMiddleware(new HostComparer());
     }
 
     /**
@@ -133,54 +134,6 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
 
             $returnedFunction($originalRequest, $options);
         }
-    }
-
-    /**
-     * @dataProvider invokeHostMatchingIsCaseInsensitiveDataProvider
-     */
-    public function testInvokeHostMatchingIsCaseInsensitive(string $requestHost, string $authenticationHost)
-    {
-        $credentials = CredentialsFactory::createBasicCredentials('username', 'password');
-
-        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
-        $this->httpAuthenticationMiddleware->setCredentials($credentials);
-        $this->httpAuthenticationMiddleware->setHost($authenticationHost);
-
-        $modifiedRequest = \Mockery::mock(RequestInterface::class);
-        $originalRequest = $this->createOriginalRequest($requestHost);
-        $originalRequest
-            ->shouldReceive('withHeader')
-            ->with(AuthorizationHeader::NAME, 'Basic ' . $credentials)
-            ->andReturn($modifiedRequest);
-
-        $options = [];
-
-        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
-            function ($returnedRequest, $returnedOptions) use ($modifiedRequest, $options) {
-                $this->assertEquals($modifiedRequest, $returnedRequest);
-                $this->assertEquals($options, $returnedOptions);
-            }
-        );
-
-        $returnedFunction($originalRequest, $options);
-    }
-
-    public function invokeHostMatchingIsCaseInsensitiveDataProvider(): array
-    {
-        return [
-            'both lowercase' => [
-                'requestHost' => 'example.com',
-                'authenticationHost' => 'example.com',
-            ],
-            'both uppercase' => [
-                'requestHost' => 'EXAMPLE.COM',
-                'authenticationHost' => 'EXAMPLE.COM',
-            ],
-            'request lowercase, authentication host  uppercase' => [
-                'requestHost' => 'example.com',
-                'authenticationHost' => 'EXAMPLE.COM',
-            ],
-        ];
     }
 
     public function testClearTypeClearCredentials()

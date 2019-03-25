@@ -7,9 +7,9 @@ class HostComparer
     public function isHostMatch(string $requestHost, string $authenticationHost)
     {
         $requestHost = strtolower($requestHost);
-        $comparatorHost = strtolower($authenticationHost);
+        $authenticationHost = strtolower($authenticationHost);
 
-        return $requestHost === $comparatorHost
-            || preg_match('*' . preg_quote($comparatorHost, '*') . '$*i', $requestHost) > 0;
+        return $requestHost === $authenticationHost
+            || preg_match('*' . preg_quote($authenticationHost, '*') . '$*i', $requestHost) > 0;
     }
 }
