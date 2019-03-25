@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpDocSignatureInspection */
 
 namespace webignition\Guzzle\Middleware\HttpAuthentication\Tests;
 
@@ -30,11 +31,6 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @dataProvider invokeAuthorizationNotSetDataProvider
-     *
-     * @param string $requestHost
-     * @param string|null $type
-     * @param string|null $credentials
-     * @param string|null $host
      */
     public function testInvokeAuthorizationNotSet(
         string $requestHost,
@@ -139,6 +135,54 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    /**
+     * @dataProvider invokeHostMatchingIsCaseInsensitiveDataProvider
+     */
+    public function testInvokeHostMatchingIsCaseInsensitive(string $requestHost, string $authenticationHost)
+    {
+        $credentials = CredentialsFactory::createBasicCredentials('username', 'password');
+
+        $this->httpAuthenticationMiddleware->setType(AuthorizationType::BASIC);
+        $this->httpAuthenticationMiddleware->setCredentials($credentials);
+        $this->httpAuthenticationMiddleware->setHost($authenticationHost);
+
+        $modifiedRequest = \Mockery::mock(RequestInterface::class);
+        $originalRequest = $this->createOriginalRequest($requestHost);
+        $originalRequest
+            ->shouldReceive('withHeader')
+            ->with(AuthorizationHeader::NAME, 'Basic ' . $credentials)
+            ->andReturn($modifiedRequest);
+
+        $options = [];
+
+        $returnedFunction = $this->httpAuthenticationMiddleware->__invoke(
+            function ($returnedRequest, $returnedOptions) use ($modifiedRequest, $options) {
+                $this->assertEquals($modifiedRequest, $returnedRequest);
+                $this->assertEquals($options, $returnedOptions);
+            }
+        );
+
+        $returnedFunction($originalRequest, $options);
+    }
+
+    public function invokeHostMatchingIsCaseInsensitiveDataProvider(): array
+    {
+        return [
+            'both lowercase' => [
+                'requestHost' => 'example.com',
+                'authenticationHost' => 'example.com',
+            ],
+            'both uppercase' => [
+                'requestHost' => 'EXAMPLE.COM',
+                'authenticationHost' => 'EXAMPLE.COM',
+            ],
+            'request lowercase, authentication host  uppercase' => [
+                'requestHost' => 'example.com',
+                'authenticationHost' => 'EXAMPLE.COM',
+            ],
+        ];
+    }
+
     public function testClearTypeClearCredentials()
     {
         $credentials = CredentialsFactory::createBasicCredentials('username', 'password');
@@ -181,13 +225,13 @@ class HttpAuthenticationMiddlewareTest extends \PHPUnit\Framework\TestCase
     /**
      * @return MockInterface|RequestInterface
      */
-    private function createOriginalRequest(): RequestInterface
+    private function createOriginalRequest(string $host = self::HOST): RequestInterface
     {
         $request = \Mockery::mock(RequestInterface::class);
         $request
             ->shouldReceive('getHeaderLine')
             ->with('host')
-            ->andReturn(self::HOST);
+            ->andReturn($host);
 
         return $request;
     }

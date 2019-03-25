@@ -59,10 +59,11 @@ class HttpAuthenticationMiddleware
                 return $handler($request, $options);
             }
 
-            $requestHost = $request->getHeaderLine('host');
+            $requestHost = strtolower($request->getHeaderLine('host'));
+            $comparatorHost = strtolower($this->host);
 
-            $hasHostMatch = $requestHost === $this->host
-                && preg_match('/' . preg_quote($this->host, '//') . '$/', $requestHost) > 0;
+            $hasHostMatch = $requestHost === $comparatorHost
+                && preg_match('/' . preg_quote($comparatorHost, '//') . '$/', $requestHost) > 0;
 
             if (!$hasHostMatch) {
                 return $handler($request, $options);
